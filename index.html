@@ -122,6 +122,9 @@ body:not([data-view="pillar"]) .bar .pn-back{display:none}
 .idfilm{position:relative;padding:0;min-height:min(92vh,820px);overflow:hidden;background:#081635}
 .idfilm video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 .idfilm .id-ov{position:relative;z-index:2;display:grid;gap:8px;align-content:end;min-height:min(92vh,820px);padding:clamp(26px,4vw,60px) max(4vw,calc(50vw - 620px));background:linear-gradient(0deg,rgba(8,22,53,.74),transparent 52%);color:#FBF7EF;pointer-events:none}
+.id-ctrls{position:absolute;right:16px;bottom:16px;z-index:3;display:flex;gap:8px;align-items:center}
+.id-ctrls[hidden]{display:none}
+.id-ctrls button:hover{background:rgba(8,22,53,.95)}
 .id-start{position:absolute;inset:0;z-index:4;display:grid;place-items:center;width:100%;height:100%;appearance:none;border:0;padding:0;margin:0;cursor:pointer;background:transparent}
 .id-start[hidden]{display:none}
 .id-start .idp{display:grid;place-items:center;width:78px;height:78px;border-radius:50%;background:rgba(251,247,239,.92);color:#0A1631;box-shadow:0 14px 40px rgba(8,22,53,.38);transition:transform .25s ease,box-shadow .25s ease,background .25s ease}
@@ -140,7 +143,7 @@ body:not([data-view="pillar"]) .bar .pn-back{display:none}
   .idfilm #id-kick,.idfilm #id-sub{display:none}
   .id-line{font-size:clamp(21px,6.8vw,29px);line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
   .idfilm #id-credit{white-space:nowrap}
-  .idfilm #mute-btn{display:none!important}
+  .idfilm .id-ctrls{display:none!important}
   .idfilm .id-start{display:none!important}
 }
 .film-open .ital{color:var(--accent)}
@@ -2401,7 +2404,10 @@ body.lbopen{overflow:hidden}
     <p id="id-credit" style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;opacity:.55">Reference film &middot; third-party footage (T-Series) &middot; inspiration for SILT's own AM film &middot; internal use only</p>
   </div>
   <button id="id-start" class="id-start" type="button" aria-label="Start the identity film"><span class="idp"><svg viewBox="0 0 12 14" aria-hidden="true"><path d="M0 0l12 7-12 7z" fill="currentColor"></path></svg></span></button>
-  <button id="mute-btn" type="button" hidden style="position:absolute;right:16px;bottom:16px;z-index:3;appearance:none;border:0;cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:9px 14px;border-radius:999px;background:rgba(8,22,53,.8);color:#FBF7EF;backdrop-filter:blur(6px)">&#128266; Sound on</button>
+  <div id="id-ctrls" class="id-ctrls" hidden>
+    <button id="id-pause" type="button" style="appearance:none;border:0;cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:9px 14px;border-radius:999px;background:rgba(8,22,53,.8);color:#FBF7EF;backdrop-filter:blur(6px)">&#9208; Pause</button>
+    <button id="mute-btn" type="button" style="appearance:none;border:0;cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:9px 14px;border-radius:999px;background:rgba(8,22,53,.8);color:#FBF7EF;backdrop-filter:blur(6px)">&#128266; Sound on</button>
+  </div>
 </section>
 <section style="padding-bottom:0">
   <div class="wrap">
@@ -2747,7 +2753,7 @@ body.lbopen{overflow:hidden}
     var ids=document.getElementById('id-sub');
     if(ids)ids.textContent=am?'Mornings swaps the spike for steady energy: caffeine with L-theanine, prebiotics for the gut, vitamins covered. The 3 PM slump stops being the running joke.':'Nights settles the day\u2019s cortisol with KSM-66, magnesium and glycine, so deep sleep actually happens. Zero melatonin, nothing to get hooked on.';
     var mbtn=document.getElementById('mute-btn');
-    if(mbtn){mbtn.hidden=true;mbtn.innerHTML='&#128266; Sound on';}
+    if(mbtn)mbtn.innerHTML='&#128266; Sound on';
     if(iva)iva.muted=true;
     if(ivp)ivp.muted=true;
     var idc=document.getElementById('id-credit');
@@ -3103,6 +3109,8 @@ body.lbopen{overflow:hidden}
   route();
   /* identity film: starts only when someone presses play */
   var mb=document.getElementById('mute-btn');
+  var ctrls=document.getElementById('id-ctrls');
+  var pauseBtn=document.getElementById('id-pause');
   var startBtn=document.getElementById('id-start');
   function isAM(){return document.documentElement.getAttribute('data-mode')!=='pm';}
   function idVid(){return isAM()?document.getElementById('id-vid-am'):document.getElementById('manifesto');}
@@ -3112,8 +3120,25 @@ body.lbopen{overflow:hidden}
       try{v.pause();v.currentTime=0;v.muted=true;}catch(e){}
     });
     if(startBtn){startBtn.hidden=false;startBtn.setAttribute('aria-label',isAM()?'Play the AM identity film':'Play the PM identity film');}
-    if(mb){mb.hidden=true;mb.innerHTML='&#128266; Sound on';}
+    if(ctrls)ctrls.hidden=true;
+    if(mb)mb.innerHTML='&#128266; Sound on';
+    if(pauseBtn)pauseBtn.innerHTML='&#9208; Pause';
   };
+  function syncPause(){
+    if(!pauseBtn)return;
+    var v=idVid(); if(!v)return;
+    pauseBtn.innerHTML=v.paused?'&#9654; Play':'&#9208; Pause';
+  }
+  ['id-vid-am','manifesto'].forEach(function(id){
+    var v=document.getElementById(id); if(!v)return;
+    ['play','pause'].forEach(function(ev){v.addEventListener(ev,syncPause);});
+  });
+  if(pauseBtn){pauseBtn.addEventListener('click',function(){
+    var v=idVid(); if(!v)return;
+    if(v.paused){var pr=v.play(); if(pr&&pr.catch)pr.catch(function(){});}
+    else v.pause();
+    syncPause();
+  });}
   if(startBtn){startBtn.addEventListener('click',function(){
     var v=idVid(); if(!v)return;
     try{v.currentTime=0;}catch(e){}
@@ -3121,7 +3146,9 @@ body.lbopen{overflow:hidden}
     var pr=v.play();
     if(pr&&pr.catch)pr.catch(function(){v.muted=true;var p2=v.play();if(p2&&p2.catch)p2.catch(function(){});});
     startBtn.hidden=true;
-    if(mb){mb.hidden=false;mb.innerHTML='&#128263; Mute';}
+    if(ctrls)ctrls.hidden=false;
+    if(mb)mb.innerHTML='&#128263; Mute';
+    if(pauseBtn)pauseBtn.innerHTML='&#9208; Pause';
   });}
   if(mb){mb.addEventListener('click',function(){
     var mv=idVid(); if(!mv)return;
